@@ -287,7 +287,7 @@ public class ZlbpUtils {
                     }
                 }
             } else {
-                logger.warn("发票数量获取失败：{}", countResult.getErrorMsg());
+                logger.warn("发票数量获取失败[{}]：{}", t.getDate(), countResult.getErrorMsg());
             }
         });
         jsonList.addAll(getOfdToJson(pathList));
@@ -392,7 +392,7 @@ public class ZlbpUtils {
                 JSONObject data = JSON.parseObject(result.getData());
                 cnt.addAndGet(data.getInteger("totalCount"));
             } else {
-                logger.warn("发票数量获取失败：{}", result.getErrorMsg());
+                logger.warn("发票数量获取失败[{}]：{}", t.getDate(), result.getErrorMsg());
             }
         });
         return cnt.get();
