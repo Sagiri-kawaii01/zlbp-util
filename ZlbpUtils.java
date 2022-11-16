@@ -151,7 +151,7 @@ public class ZlbpUtils {
      * @param fpzt 发票状态
      * @return 接口返回结果
      */
-    public static GenericResult booking(String fplx, String fpdm, String fphm, String kpyf, String xfsbh, String gfsbh, String km_1, String km_2, String fpzt) {
+    public static GenericResult booking(FPLX fplx, String fpdm, String fphm, String kpyf, String xfsbh, String gfsbh, String km_1, String km_2, String fpzt) {
         String jsonStr = JSONObject.toJSONString(new LinkedHashMap<String, Object>(9) {
             {
                 put("fplx", fplx);
