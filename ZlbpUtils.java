@@ -428,7 +428,7 @@ public class ZlbpUtils {
         return new SimpleCalendar(date);
     }
 
-    private static List<String> getOfdToJson(List<String> pathList){
+    public static List<String> getOfdToJson(List<String> pathList){
         List<String> jsonList = new ArrayList<>();
         try {
             for (String path : pathList) {
@@ -448,7 +448,7 @@ public class ZlbpUtils {
 
     }
 
-    private static List<String> decryptList(String dataList,String fileDirPathSrc) {
+    public static List<String> decryptList(String dataList,String fileDirPathSrc) {
         List<FileResultZww> fileResultZwwList = JSON.parseArray(dataList, FileResultZww.class);
         List<String> filesPath = new ArrayList<>();
         fileResultZwwList.forEach(frz -> {
