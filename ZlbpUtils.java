@@ -36,17 +36,16 @@ public class ZlbpUtils {
      * 企业纳税⼈识别号
      */
     private static final String instCode = "";
-    
+
     /**
      * 企业密码
      */
     private static final String password = "";
-    
+
     /**
      * 企业密钥
      */
     private static final String privateKeyContent = "";
-
 
     private static final Logger logger = LoggerFactory.getLogger(ZlbpUtils.class);
 
@@ -77,7 +76,7 @@ public class ZlbpUtils {
     /**
      * 超过核心大小数量的线程的空闲存活时间
      */
-    private static final long KEEP_ALIVE_TIME = 15;
+    private static final long KEEP_ALIVE_TIME = 3;
 
     /**
      * 超过核心大小数量的线程的空闲存活时间单位
@@ -190,7 +189,7 @@ public class ZlbpUtils {
 
     /**
      * 单张发票状态回写
-     * @param fplx 发票类型
+     * @param fplx 发票类型：{@link FPLX}
      * @param fpdm 发票代码
      * @param fphm 发票号码
      * @param kpyf 开票月份
@@ -232,7 +231,7 @@ public class ZlbpUtils {
      * 下载某天的发票OFD保存并解析为json
      * @param dirPath 保存的目录
      * @param date 日期
-     * @param gxfbs 购销方标识
+     * @param gxfbs 购销方标识：销方 {@link #GXFBS_XF}、购方 {@link #GXFBS_GF}、购销方 {@link #GXFBS_GXF}
      * @return 解析后的对象
      */
     public static OfdInfo saveAndParseOnDate(String dirPath, String date, int gxfbs) {
@@ -253,7 +252,7 @@ public class ZlbpUtils {
      * 下载某个月的发票OFD保存并解析为json
      * @param dirPath 保存的目录
      * @param month 月份
-     * @param gxfbs 购销方标识
+     * @param gxfbs 购销方标识：销方 {@link #GXFBS_XF}、购方 {@link #GXFBS_GF}、购销方 {@link #GXFBS_GXF}
      * @return 解析后的对象
      */
     public static OfdInfo saveAndParseOnMonth(String dirPath, int month, int gxfbs) {
@@ -265,7 +264,7 @@ public class ZlbpUtils {
      * @param dirPath 保存的目录
      * @param month 月份
      * @param year 年份
-     * @param gxfbs 购销方标识
+     * @param gxfbs 购销方标识：销方 {@link #GXFBS_XF}、购方 {@link #GXFBS_GF}、购销方 {@link #GXFBS_GXF}
      * @return 解析后的对象
      */
     private static OfdInfo saveAndParseOnMonth(String dirPath, int month, int year, int gxfbs) {
@@ -291,7 +290,7 @@ public class ZlbpUtils {
      * @param dirPath 保存的目录
      * @param startAt 起始日期 e.g.2022-01-01
      * @param endAt 截止日期（包括）
-     * @param gxfbs 购销方标识
+     * @param gxfbs 购销方标识：销方 {@link #GXFBS_XF}、购方 {@link #GXFBS_GF}、购销方 {@link #GXFBS_GXF}
      * @return 解析后的对象
      */
     public static OfdInfo saveAndParse(String dirPath, String startAt, String endAt, int gxfbs) {
@@ -314,7 +313,7 @@ public class ZlbpUtils {
      * @param dirPath 保存的目录
      * @param startAt 起始时间 e.g.2022-01-01
      * @param days 天数
-     * @param gxfbs 购销方标识
+     * @param gxfbs 购销方标识：销方 {@link #GXFBS_XF}、购方 {@link #GXFBS_GF}、购销方 {@link #GXFBS_GXF}
      * @return 解析后的对象
      */
     public static OfdInfo saveAndParse(String dirPath, String startAt, int days, int gxfbs) {
@@ -370,7 +369,7 @@ public class ZlbpUtils {
     /**
      * 获取某天的发票数量
      * @param date 日期 e.g.2022-01-01
-     * @param gxfbs 购销方标识
+     * @param gxfbs 购销方标识：销方 {@link #GXFBS_XF}、购方 {@link #GXFBS_GF}、购销方 {@link #GXFBS_GXF}
      * @return 发票数量
      */
     public static int getCountOnDate(String date, int gxfbs) {
@@ -389,7 +388,7 @@ public class ZlbpUtils {
     /**
      * 获取某个月的发票数量
      * @param month 月份
-     * @param gxfbs 购销方标识
+     * @param gxfbs 购销方标识：销方 {@link #GXFBS_XF}、购方 {@link #GXFBS_GF}、购销方 {@link #GXFBS_GXF}
      * @return 发票数量
      */
     public static int getCountOnMonth(int month, int gxfbs) {
@@ -400,7 +399,7 @@ public class ZlbpUtils {
      * 获取某个月的发票数量
      * @param month 月份
      * @param year 年份
-     * @param gxfbs 购销方标识
+     * @param gxfbs 购销方标识：销方 {@link #GXFBS_XF}、购方 {@link #GXFBS_GF}、购销方 {@link #GXFBS_GXF}
      * @return 发票数量
      */
     private static int getCountOnMonth(int month, int year, int gxfbs) {
@@ -424,7 +423,7 @@ public class ZlbpUtils {
      * 获取一段时间的发票数量
      * @param startAt 起始日期 e.g.2022-01-01
      * @param endAt 截止日期（包括）
-     * @param gxfbs 购销方标识
+     * @param gxfbs 购销方标识：销方 {@link #GXFBS_XF}、购方 {@link #GXFBS_GF}、购销方 {@link #GXFBS_GXF}
      * @return 发票数量
      */
     public static int getCount(String startAt, String endAt, int gxfbs) {
@@ -445,7 +444,7 @@ public class ZlbpUtils {
      * 获取一段时间的发票数量
      * @param startAt 起始日期 e.g.2022-01-01
      * @param days 天数
-     * @param gxfbs 购销方标识
+     * @param gxfbs 购销方标识：销方 {@link #GXFBS_XF}、购方 {@link #GXFBS_GF}、购销方 {@link #GXFBS_GXF}
      * @return 发票数量
      */
     public static int getCount(String startAt, int days, int gxfbs) {
