@@ -200,7 +200,7 @@ public class ZlbpUtils {
      * @param fpzt 发票状态
      * @return 接口返回结果
      */
-    public static GenericResult booking(FPLX fplx, String fpdm, String fphm, String kpyf, String xfsbh, String gfsbh, String km_1, String km_2, String fpzt) {
+    public static GenericResult packageBooking(FPLX fplx, String fpdm, String fphm, String kpyf, String xfsbh, String gfsbh, String km_1, String km_2, String fpzt) {
         String jsonStr = JSONObject.toJSONString(new LinkedHashMap<String, Object>(9) {
             {
                 put("fplx", fplx);
@@ -475,7 +475,7 @@ public class ZlbpUtils {
      * @param endAt 截止日期
      * @return 天数
      */
-    public static int getDaysBetween(String startAt, String endAt) {
+    private static int getDaysBetween(String startAt, String endAt) {
         try {
             Date day1 = format.parse(startAt);
             Date day2 = format.parse(endAt);
@@ -499,6 +499,11 @@ public class ZlbpUtils {
         return new SimpleCalendar(date);
     }
 
+    /**
+     * 解析本地ofd文件为json数据
+     * @param pathList 文件路径列表
+     * @return json列表
+     */
     public static List<String> getOfdToJson(List<String> pathList){
         List<String> jsonList = new ArrayList<>();
         try {
@@ -519,6 +524,12 @@ public class ZlbpUtils {
 
     }
 
+    /**
+     * 解析浙里办票加密数据为ofd文件并保存到本地
+     * @param dataList 加密数据
+     * @param fileDirPathSrc 保存的路径
+     * @return 文件路径列表
+     */
     public static List<String> decryptList(String dataList,String fileDirPathSrc) {
         List<FileResultZww> fileResultZwwList = JSON.parseArray(dataList, FileResultZww.class);
         List<String> filesPath = new ArrayList<>();
@@ -540,6 +551,12 @@ public class ZlbpUtils {
         return filesPath;
     }
 
+    /**
+     * 浙里办票文件下载接口
+     * @param requestId requestId，需要与同一天的页数查询接口一致
+     * @param pageNumber 页号
+     * @return 请求结果
+     */
     public static GenericResult packageInfo(String requestId, String pageNumber) {
         String jsonStr = JSONObject.toJSONString(new LinkedHashMap<String, Object>(3) {
             {
@@ -556,6 +573,7 @@ public class ZlbpUtils {
      * @param requestId 请求id
      * @param jgrq 加工日期
      * @param gxfbs 购销方标识
+     * @return 请求结果
      */
     public static GenericResult packageCount(String requestId, String jgrq, int gxfbs) {
         String jsonStr = JSONObject.toJSONString(new LinkedHashMap<String, Object>(5) {
