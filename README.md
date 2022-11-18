@@ -34,8 +34,8 @@
 |packageBooking |浙里办票回写接口|
 |packageCount|浙里办票页数查询接口|
 |packageInfo|浙里办票文件下载接口|
-|getFplx|根据发票类型中文获取对应的英文|
-|getOfdToJson|解析ofd文件为json数据|
+|parseFplx|根据发票类型中文获取对应的英文|
+|parseOfdToJson|解析ofd文件为json数据|
 |decryptList|解析浙里办票返回的加密数据，并保存为ofd|
 
 其中，上6个方法为常用方法，已高度封装
