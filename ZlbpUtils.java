@@ -183,7 +183,7 @@ public class ZlbpUtils {
         }
     };
 
-    public static FPLX getFplx(String fplx) {
+    public static FPLX parseFplx(String fplx) {
         return fplxMap.get(fplx);
     }
 
@@ -346,7 +346,7 @@ public class ZlbpUtils {
         });
         try {
             if (sc.awaitTermination()) {
-                jsonList.addAll(getOfdToJson(pathList));
+                jsonList.addAll(parseOfdToJson(pathList));
                 return ofdInfo;
             } else {
                 throw new ThreadInterruptedException("线程运行超时！");
@@ -504,7 +504,7 @@ public class ZlbpUtils {
      * @param pathList 文件路径列表
      * @return json列表
      */
-    public static List<String> getOfdToJson(List<String> pathList){
+    public static List<String> parseOfdToJson(List<String> pathList){
         List<String> jsonList = new ArrayList<>();
         try {
             for (String path : pathList) {
