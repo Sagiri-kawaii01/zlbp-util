@@ -21,6 +21,26 @@
 
 多线程（工具类）：39秒
 
+## 可用方法
+
+| 方法名 | 作用 |
+|-------|------|
+|getCount |获取指定时间段内的发票数量|
+|getCountOnDate |获取指定日期的发票数量|
+|getCountOnMonth |获取指定月份的发票数量|
+|saveAndParse| 下载并解析指定时间段内的所有发票|
+|saveAndParseOnDate |下载并解析指定日期的所有发票|
+|saveAndParseOnMonth |下载并解析指定月份的所有发票|
+|packageBooking |浙里办票回写接口|
+|packageCount|浙里办票页数查询接口|
+|packageInfo|浙里办票文件下载接口|
+|getFplx|根据发票类型中文获取对应的英文|
+|getOfdToJson|解析ofd文件为json数据|
+|decryptList|解析浙里办票返回的加密数据，并保存为ofd|
+
+其中，上6个方法为常用方法，已高度封装
+
+如果有更加细致的需求，可以调用后面6个较为原生的方法
 
 ## InvoiceData
 
