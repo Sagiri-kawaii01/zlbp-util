@@ -20,6 +20,9 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -44,12 +47,58 @@ public class ZlbpUtils {
      */
     private static final String privateKeyContent = "";
 
+
     private static final Logger logger = LoggerFactory.getLogger(ZlbpUtils.class);
 
     /**
      * 日期格式化规则，遵循接口规范
      */
     private static final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+
+
+    /*
+    线程池相关配置
+    每一个请求都有自己的线程池
+    由于浙里办票的接口只能按天请求数据，所以需要发很多次请求，利用线程可以提高效率
+     */
+
+    /**
+     * 线程池核心大小
+     * 一直存活的线程数量
+     */
+    private static final int CORE_POOL_SIZE = 16;
+
+    /**
+     * 线程池最大大小
+     * 当线程池没有空闲线程，并且有新任务来时会创建新的线程
+     */
+    private static final int MAX_POOL_SIZE = 32;
+
+    /**
+     * 超过核心大小数量的线程的空闲存活时间
+     */
+    private static final long KEEP_ALIVE_TIME = 15;
+
+    /**
+     * 超过核心大小数量的线程的空闲存活时间单位
+     */
+    private static final TimeUnit KEEP_ALIVE_TIME_UNIT = TimeUnit.SECONDS;
+
+    /**
+     * 当线程池满时，新来的任务加入的等待队列
+     * 浙里办票接口只能查询今年的数据
+     */
+    private static final int BLOCKING_QUEUE_CAPACITY = 366;
+
+    /**
+     * 默认线程超时时长
+     */
+    private static final long DEFAULT_TIMEOUT = 10;
+
+    /**
+     * 默认线程超时时长单位
+     */
+    private static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.MINUTES;
 
     /**
      * 页数接口
@@ -80,6 +129,7 @@ public class ZlbpUtils {
      * 购销方标识——购销方
      */
     public static final int GXFBS_GXF = 2;
+
 
     /**
      * 发票类型
@@ -268,14 +318,19 @@ public class ZlbpUtils {
      * @return 解析后的对象
      */
     public static OfdInfo saveAndParse(String dirPath, String startAt, int days, int gxfbs) {
+        File file = new File(dirPath);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
         OfdInfo ofdInfo = new OfdInfo();
         List<String> pathList = new ArrayList<>();
         List<String> jsonList = new ArrayList<>();
         ofdInfo.setSavedPathList(pathList);
         ofdInfo.setJsonParsedList(jsonList);
-        newCalendar(startAt).doTask(days, (t)->{
+        SimpleCalendar sc = newCalendar(startAt).doTask(days, (date) -> {
+            logger.warn(date);
             String requestId = getRequestId();
-            GenericResult countResult = packageCount(requestId, t.getDate(), gxfbs);
+            GenericResult countResult = packageCount(requestId, date, gxfbs);
             if (postSuccess(countResult)) {
                 int page = JSON.parseObject(countResult.getData()).getInteger("totalPage");
                 for (int i = 1; i <= page; i++) {
@@ -287,11 +342,20 @@ public class ZlbpUtils {
                     }
                 }
             } else {
-                logger.warn("发票数量获取失败[{}]：{}", t.getDate(), countResult.getErrorMsg());
+                logger.warn("发票数量获取失败[{}]：{}", date, countResult.getErrorMsg());
             }
         });
-        jsonList.addAll(getOfdToJson(pathList));
-        return ofdInfo;
+        try {
+            if (sc.awaitTermination()) {
+                jsonList.addAll(getOfdToJson(pathList));
+                return ofdInfo;
+            } else {
+                throw new ThreadInterruptedException("线程运行超时！");
+            }
+        } catch (InterruptedException e) {
+            throw new ThreadInterruptedException("线程终止错误：" + e.getMessage());
+        }
+
     }
 
     /**
@@ -386,16 +450,24 @@ public class ZlbpUtils {
      */
     public static int getCount(String startAt, int days, int gxfbs) {
         AtomicInteger cnt = new AtomicInteger(0);
-        newCalendar(startAt).doTask(days, (t)->{
-            GenericResult result = packageCount(getRequestId(), t.getDate(), gxfbs);
+        SimpleCalendar sc = newCalendar(startAt).doTask(days, (date) -> {
+            GenericResult result = packageCount(getRequestId(), date, gxfbs);
             if (postSuccess(result)) {
                 JSONObject data = JSON.parseObject(result.getData());
                 cnt.addAndGet(data.getInteger("totalCount"));
             } else {
-                logger.warn("发票数量获取失败[{}]：{}", t.getDate(), result.getErrorMsg());
+                logger.warn("发票数量获取失败[{}]：{}", date, result.getErrorMsg());
             }
         });
-        return cnt.get();
+        try {
+            if (sc.awaitTermination()) {
+                return cnt.get();
+            } else {
+                throw new ThreadInterruptedException("线程运行超时！");
+            }
+        } catch (InterruptedException e) {
+            throw new ThreadInterruptedException("线程终止错误：" + e.getMessage());
+        }
     }
 
     /**
@@ -505,8 +577,13 @@ public class ZlbpUtils {
         return JSON.toJSONString(request);
     }
 
+    /**
+     * 获取页数和下载文件的请求必须有相同的requestId
+     * 由于使用多线程下载，时间戳可能重复，所以使用UUID
+     * @return 唯一的requestId
+     */
     private static String getRequestId() {
-        return "FFFFFFFFFFFFFF_"+ System.currentTimeMillis();
+        return UUID.randomUUID().toString();
     }
 
     private static GenericResult post(String jsonStr, String uri) {
@@ -520,6 +597,8 @@ public class ZlbpUtils {
     }
 
     private static class SimpleCalendar {
+
+        private final ThreadPoolExecutor threadPool = new ThreadPoolExecutor(CORE_POOL_SIZE, MAX_POOL_SIZE, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT, new ArrayBlockingQueue<>(BLOCKING_QUEUE_CAPACITY));
 
         private final Calendar calendar;
 
@@ -539,11 +618,22 @@ public class ZlbpUtils {
             setDate(date);
         }
 
-        private void doTask(int days, Consumer<SimpleCalendar> c) {
+        private SimpleCalendar doTask(int days, Consumer<String> task) {
             for (int i = 0; i < days; i++) {
-                c.accept(this);
+                String date = getDate();
+                threadPool.execute(()-> task.accept(date));
                 this.calendar.add(Calendar.DATE, 1);
             }
+            threadPool.shutdown();
+            return this;
+        }
+
+        private boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+            return threadPool.awaitTermination(timeout, unit);
+        }
+
+        private boolean awaitTermination() throws InterruptedException {
+            return awaitTermination(DEFAULT_TIMEOUT, DEFAULT_TIME_UNIT);
         }
 
         private int getMonth(int month) {
@@ -610,6 +700,15 @@ public class ZlbpUtils {
         }
 
         public DateFormatException(String message) {
+            super(message);
+        }
+    }
+
+    public static class ThreadInterruptedException extends RuntimeException {
+        public ThreadInterruptedException() {
+        }
+
+        public ThreadInterruptedException(String message) {
             super(message);
         }
     }
