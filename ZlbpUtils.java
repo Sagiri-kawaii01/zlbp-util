@@ -56,48 +56,93 @@ public class ZlbpUtils {
 
 
     /*
-    线程池相关配置
+    工具类的线程池相关配置，采用线程池，防止过多调用导致开太多线程
+     */
+
+    /**
+     * @see ZlbpUtils#utilPool
+     * 线程池核心大小
+     * 一直存活的线程数量
+     */
+    private static final int UTIL_CORE_POOL_SIZE = 5;
+
+    /**
+     * @see ZlbpUtils#utilPool
+     * 线程池最大大小
+     * 当线程池没有空闲线程，并且有新任务来时会创建新的线程
+     */
+    private static final int UTIL_MAX_POOL_SIZE = 5;
+
+    /**
+     * @see ZlbpUtils#utilPool
+     * 超过核心大小数量的线程的空闲存活时间
+     */
+    private static final long UTIL_KEEP_ALIVE_TIME = 0;
+
+    /**
+     * @see ZlbpUtils#utilPool
+     * 超过核心大小数量的线程的空闲存活时间单位
+     */
+    private static final TimeUnit UTIL_KEEP_ALIVE_TIME_UNIT = TimeUnit.SECONDS;
+
+    /**
+     * @see ZlbpUtils#utilPool
+     * 当线程池满时，新的方法调用进入队列等待，超过这个值时将报错
+     */
+    private static final int UTIL_BLOCKING_QUEUE_CAPACITY = 20;
+
+    private static final ThreadPoolExecutor utilPool = new ThreadPoolExecutor(UTIL_CORE_POOL_SIZE, UTIL_MAX_POOL_SIZE, UTIL_KEEP_ALIVE_TIME, UTIL_KEEP_ALIVE_TIME_UNIT, new ArrayBlockingQueue<>(UTIL_BLOCKING_QUEUE_CAPACITY), new ThreadPoolExecutor.AbortPolicy());
+
+    /*
+    每个任务的线程池相关配置 
     每一个请求都有自己的线程池
     由于浙里办票的接口只能按天请求数据，所以需要发很多次请求，利用线程可以提高效率
      */
 
     /**
+     * @see SimpleCalendar#threadPool
      * 线程池核心大小
      * 一直存活的线程数量
      */
-    private static final int CORE_POOL_SIZE = 16;
+    private static final int TASK_CORE_POOL_SIZE = 16;
 
     /**
+     * @see SimpleCalendar#threadPool
      * 线程池最大大小
      * 当线程池没有空闲线程，并且有新任务来时会创建新的线程
      */
-    private static final int MAX_POOL_SIZE = 32;
+    private static final int TASK_MAX_POOL_SIZE = 32;
 
     /**
+     * @see SimpleCalendar#threadPool
      * 超过核心大小数量的线程的空闲存活时间
      */
-    private static final long KEEP_ALIVE_TIME = 3;
+    private static final long TASK_KEEP_ALIVE_TIME = 3;
 
     /**
+     * @see SimpleCalendar#threadPool
      * 超过核心大小数量的线程的空闲存活时间单位
      */
-    private static final TimeUnit KEEP_ALIVE_TIME_UNIT = TimeUnit.SECONDS;
+    private static final TimeUnit TASK_KEEP_ALIVE_TIME_UNIT = TimeUnit.SECONDS;
 
     /**
+     * @see SimpleCalendar#threadPool
      * 当线程池满时，新来的任务加入的等待队列
      * 浙里办票接口只能查询今年的数据
      */
-    private static final int BLOCKING_QUEUE_CAPACITY = 366;
+    private static final int TASK_BLOCKING_QUEUE_CAPACITY = 366;
 
     /**
+     * @see SimpleCalendar#threadPool
      * 默认线程超时时长
      */
-    private static final long DEFAULT_TIMEOUT = 10;
+    private static final long TASK_DEFAULT_TIMEOUT = 10;
 
     /**
+     * @see SimpleCalendar#threadPool
      * 默认线程超时时长单位
      */
-    private static final TimeUnit DEFAULT_TIME_UNIT = TimeUnit.MINUTES;
+    private static final TimeUnit TASK_DEFAULT_TIME_UNIT = TimeUnit.MINUTES;
 
     /**
      * 页数接口
@@ -326,7 +371,8 @@ public class ZlbpUtils {
         List<String> jsonList = new ArrayList<>();
         ofdInfo.setSavedPathList(pathList);
         ofdInfo.setJsonParsedList(jsonList);
-        SimpleCalendar sc = newCalendar(startAt).doTask(days, (date) -> {
+        SimpleCalendar sc = newCalendar(startAt);
+        utilPool.execute(()-> sc.doTask(days, (date) -> {
             logger.warn(date);
             String requestId = getRequestId();
             GenericResult countResult = packageCount(requestId, date, gxfbs);
@@ -343,7 +389,7 @@ public class ZlbpUtils {
             } else {
                 logger.warn("发票数量获取失败[{}]：{}", date, countResult.getErrorMsg());
             }
-        });
+        }));
         try {
             if (sc.awaitTermination()) {
                 jsonList.addAll(parseOfdToJson(pathList));
@@ -449,7 +495,8 @@ public class ZlbpUtils {
      */
     public static int getCount(String startAt, int days, int gxfbs) {
         AtomicInteger cnt = new AtomicInteger(0);
-        SimpleCalendar sc = newCalendar(startAt).doTask(days, (date) -> {
+        SimpleCalendar sc = newCalendar(startAt);
+        utilPool.execute(() -> sc.doTask(days, (date) -> {
             GenericResult result = packageCount(getRequestId(), date, gxfbs);
             if (postSuccess(result)) {
                 JSONObject data = JSON.parseObject(result.getData());
@@ -457,7 +504,7 @@ public class ZlbpUtils {
             } else {
                 logger.warn("发票数量获取失败[{}]：{}", date, result.getErrorMsg());
             }
-        });
+        }));
         try {
             if (sc.awaitTermination()) {
                 return cnt.get();
@@ -615,7 +662,7 @@ public class ZlbpUtils {
 
     private static class SimpleCalendar {
 
-        private final ThreadPoolExecutor threadPool = new ThreadPoolExecutor(CORE_POOL_SIZE, MAX_POOL_SIZE, KEEP_ALIVE_TIME, KEEP_ALIVE_TIME_UNIT, new ArrayBlockingQueue<>(BLOCKING_QUEUE_CAPACITY));
+        private final ThreadPoolExecutor threadPool = new ThreadPoolExecutor(TASK_CORE_POOL_SIZE, TASK_MAX_POOL_SIZE, TASK_KEEP_ALIVE_TIME, TASK_KEEP_ALIVE_TIME_UNIT, new ArrayBlockingQueue<>(TASK_BLOCKING_QUEUE_CAPACITY));
 
         private final Calendar calendar;
 
@@ -650,7 +697,7 @@ public class ZlbpUtils {
         }
 
         private boolean awaitTermination() throws InterruptedException {
-            return awaitTermination(DEFAULT_TIMEOUT, DEFAULT_TIME_UNIT);
+            return awaitTermination(TASK_DEFAULT_TIMEOUT, TASK_DEFAULT_TIME_UNIT);
         }
 
         private int getMonth(int month) {
